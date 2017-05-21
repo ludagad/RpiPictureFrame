@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        is-multidex="false"
+        jar="C:\Users\User\StudioProjects\RpiSFTP\app\libs\jsch-0.1.54.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="25.0.3"
+        sha1="0d7d8aba0d11e8cd2f775f47cd3a6cfbf2837da4">
+        <dex dex="C:\Users\User\StudioProjects\RpiSFTP\app\build\intermediates\pre-dexed\debug\jsch-0.1.54_54b3c2876d952ae62ec911a75d7a6c669599b793.jar" />
+    </item>
+
+</items>
