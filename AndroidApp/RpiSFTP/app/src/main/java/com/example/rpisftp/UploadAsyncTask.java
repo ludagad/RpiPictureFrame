@@ -2,6 +2,10 @@ package com.example.rpisftp;
 
 import android.app.Activity;
 import android.content.res.AssetManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.graphics.RectF;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -57,7 +61,7 @@ public final class UploadAsyncTask extends AsyncTask<ArrayList<Uri>, String, Lon
             if (0 != sftpOpenSession()) {
                 for (int i=0; i<this.imageUriArr.size(); i++) {
                     this.imageUri = this.imageUriArr.get(i);
-                    if (0 != StoreFile()) {
+                    if (0 != RescaleFile() /*StoreFile()*/) {
                         //ToDo (@Priority: Medium): Get file name / content type from URI.
                         if (0 != sftpUploadFile()) {
                             uploadCnt++;
@@ -151,6 +155,87 @@ public final class UploadAsyncTask extends AsyncTask<ArrayList<Uri>, String, Lon
                 }
             }
         }
+        return result;
+    }
+
+
+    private int RescaleFile() {
+        int result=0;
+        InputStream inputStream = null;
+        OutputStream outputStream = null;
+        int inWidth = 0;
+        int inHeight = 0;
+        final int dstWidth = 800;
+        final int dstHeight = 480;
+
+        try {
+            //Open input stream with intent passed image
+            inputStream = this.activity.getContentResolver().openInputStream(this.imageUri);
+
+            // decode image size (decode metadata only, not the whole image)
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(inputStream, null, options);
+            inputStream.close();
+            inputStream = null;
+
+            // save width and height
+            inWidth = options.outWidth;
+            inHeight = options.outHeight;
+
+            // decode full image pre-resized
+            inputStream = this.activity.getContentResolver().openInputStream(this.imageUri);
+            options = new BitmapFactory.Options();
+            // calc rought re-size (this is no exact resize)
+            options.inSampleSize = Math.max(inWidth/dstWidth, inHeight/dstHeight);
+            // decode full image
+            Bitmap roughBitmap = BitmapFactory.decodeStream(inputStream, null, options);
+
+            // calc exact destination size
+            Matrix m = new Matrix();
+            RectF inRect = new RectF(0, 0, roughBitmap.getWidth(), roughBitmap.getHeight());
+            RectF outRect = new RectF(0, 0, dstWidth, dstHeight);
+            m.setRectToRect(inRect, outRect, Matrix.ScaleToFit.CENTER);
+            float[] values = new float[9];
+            m.getValues(values);
+
+            // resize bitmap
+            Bitmap resizedBitmap = Bitmap.createScaledBitmap(roughBitmap, (int) (roughBitmap.getWidth() * values[0]), (int) (roughBitmap.getHeight() * values[4]), true);
+
+            // save image
+            try {
+                File outputDir = this.activity.getCacheDir(); // context being the Activity pointer
+                //TBI... String imageFileName = getFileName();
+                File outputFile = File.createTempFile("myFile", ".jpg", outputDir);
+                this.fileToSFTP = outputFile.getAbsolutePath();
+                outputStream = new FileOutputStream(outputFile);
+                resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
+
+                result = -1;
+            } catch (Exception e) {
+                Log.e("Image", e.getMessage(), e);
+            } finally {
+                if (outputStream != null) {
+                    try {
+                        // outputStream.flush();
+                        outputStream.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (IOException e) {
+            Log.e("Image", e.getMessage(), e);
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
         return result;
     }
 
