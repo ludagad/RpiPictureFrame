@@ -1,0 +1,3 @@
+This folder contains:
+
+PF_main.sh --> main execution script
